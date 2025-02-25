@@ -1,0 +1,95 @@
+package uz.javachi;
+
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import static uz.javachi.Main.*;
+
+public class Aquarium implements Runnable {
+    private final List<Fish> fishList = new CopyOnWriteArrayList<>();
+    private final List<Thread> fishThreads = new ArrayList<>();
+    private final Random random;
+
+    public Aquarium() {
+        this.random = new Random();
+    }
+
+    @Override
+    public void run() {
+        System.out.println("AKVARIUM YARATILDI...");
+        FIRST_GENERATING_FISHES_COUNT = random.nextInt(50, 200);
+        generateNewFishes(FIRST_GENERATING_FISHES_COUNT);
+
+        AQUARIUM_MAX_SIZE = random.nextInt(200, 600);
+        AQUARIUM_MIN_SIZE = 0;
+
+        while (fishList.size() < AQUARIUM_MAX_SIZE && fishList.size() > AQUARIUM_MIN_SIZE) {
+            try {
+                Thread.sleep(150);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            synchronized (fishList) {
+                Iterator<Fish> fishIterator = fishList.iterator();
+                while (fishIterator.hasNext()) {
+                    Fish fish = fishIterator.next();
+                    if (!fish.isAlive()) {
+                        fishIterator.remove();
+                        continue;
+                    }
+
+                    for (Fish fish2 : fishList) {
+                        if (!fish.equals(fish2) &&
+                                fish.getX() == fish2.getX() &&
+                                fish.getY() == fish2.getY() &&
+                                fish.getZ() == fish2.getZ() &&
+                                fish.isAdult() && fish2.isAdult() &&
+                                fish.isCanBreed() && fish2.isCanBreed() &&
+                                fish.isMale() != fish2.isMale()) {
+                            int fishCount = random.nextInt(1, 10);
+                            TOTAL_NEW_GENERATING_FISHES_AFTER_MEET += fishCount;
+                            TOTAL_FISHES_MEET += 1;
+                            System.out.printf("Baliqlar uchrashdi va %d ta baliq yangi yaratildi!\n", fishCount);
+                            generateNewFishes(fishCount);
+                        }
+                    }
+                }
+            }
+        }
+        waitForFishThreadsToFinish();
+        System.err.println("AKVARIUM TO'XTADI...");
+
+        TOTAL_FISHES = TOTAL_NEW_GENERATING_FISHES_AFTER_MEET + FIRST_GENERATING_FISHES_COUNT;
+
+        System.out.println("\n");
+
+        System.out.printf("Akvarium max sig'imi: %d\n", AQUARIUM_MAX_SIZE);
+        System.out.printf("Akvarium min sig'imi: %d\n", AQUARIUM_MIN_SIZE);
+        System.out.printf("Birinchi yaratilgan baliqlar soni: %d\n", FIRST_GENERATING_FISHES_COUNT);
+        System.out.printf("Barcha baliqlar soni: %d\n", TOTAL_FISHES);
+        System.out.printf("Barcha o'lgan baliqlar soni: %d\n", TOTAL_FISHES_DIE);
+        System.out.printf("Barcha uchrashuvlar soni: %d\n", TOTAL_FISHES_MEET);
+        System.out.printf("Barcha uchrashuvlardan so'ng yaratilgan baliqlar soni: %d\n", TOTAL_NEW_GENERATING_FISHES_AFTER_MEET);
+    }
+
+    private void waitForFishThreadsToFinish() {
+        for (Thread thread : fishThreads) {
+            try {
+                thread.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    private void generateNewFishes(int fishCount) {
+        for (int i = 0; i < fishCount; i++) {
+            Fish newFish = new Fish();
+            Thread thread = new Thread(newFish);
+            thread.start();
+            fishThreads.add(thread);
+            System.out.printf("Yanig baliq yaratildi jinsi %s\n", (newFish.isMale()) ? "ERKAK" : "AYOL");
+            fishList.add(newFish);
+        }
+    }
+}
