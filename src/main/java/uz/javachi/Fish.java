@@ -35,7 +35,7 @@ public class Fish implements Runnable {
             if (System.currentTimeMillis() >= birthTime + (liveDuration / 10)) {
                 adult = true;
             }
-            if (!canBreed && System.currentTimeMillis() >= birthTime + (liveDuration / 30)) {
+            if (!canBreed && System.currentTimeMillis() >= lastBreedTime + (liveDuration / 5)) {
                 canBreed = true;
             }
 

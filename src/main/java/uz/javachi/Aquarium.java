@@ -1,12 +1,13 @@
 package uz.javachi;
 
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static uz.javachi.Main.*;
 
 public class Aquarium implements Runnable {
-    private final List<Fish> fishList = new CopyOnWriteArrayList<>();
+    private final Queue<Fish> fishList = new ConcurrentLinkedQueue<>();
+    private final Set<String> occupiedPositions = Collections.synchronizedSet(new HashSet<>());
     private final List<Thread> fishThreads = new ArrayList<>();
     private final Random random;
 
@@ -30,33 +31,40 @@ public class Aquarium implements Runnable {
                 throw new RuntimeException(e);
             }
 
-            synchronized (fishList) {
-                Iterator<Fish> fishIterator = fishList.iterator();
-                while (fishIterator.hasNext()) {
-                    Fish fish = fishIterator.next();
-                    if (!fish.isAlive()) {
-                        fishIterator.remove();
-                        continue;
-                    }
-
-                    for (Fish fish2 : fishList) {
-                        if (!fish.equals(fish2) &&
-                                fish.getX() == fish2.getX() &&
-                                fish.getY() == fish2.getY() &&
-                                fish.getZ() == fish2.getZ() &&
-                                fish.isAdult() && fish2.isAdult() &&
-                                fish.isCanBreed() && fish2.isCanBreed() &&
-                                fish.isMale() != fish2.isMale()) {
-                            int fishCount = random.nextInt(1, 10);
-                            TOTAL_NEW_GENERATING_FISHES_AFTER_MEET += fishCount;
-                            TOTAL_FISHES_MEET += 1;
-                            System.out.printf("Baliqlar uchrashdi va %d ta baliq yangi yaratildi!\n", fishCount);
-                            generateNewFishes(fishCount);
+            fishList.removeIf(fish -> {
+                        if (!fish.isAlive()) {
+                            occupiedPositions.remove(fish.getX() + "," + fish.getY() + "," + fish.getZ());
+                            return true;
                         }
+                        return false;
+                    }
+            );
+
+            for (Fish fish1 : fishList) {
+                for (Fish fish2 : fishList) {
+                    if (!fish1.equals(fish2) && fish1.isAdult() && fish2.isAdult() &&
+                            fish1.isCanBreed() && fish2.isCanBreed() &&
+                            fish1.isMale() != fish2.isMale() &&
+                            fish1.getX() == fish2.getX() &&
+                            fish1.getY() == fish2.getY() &&
+                            fish1.getZ() == fish2.getZ()) {
+                        int fishCount = random.nextInt(1, 10);
+                        TOTAL_NEW_GENERATING_FISHES_AFTER_MEET += fishCount;
+                        TOTAL_FISHES_MEET += 1;
+                        fish1.setLastBreedTime(System.currentTimeMillis());
+                        fish2.setLastBreedTime(System.currentTimeMillis());
+                        System.out.printf("Baliqlar uchrashdi va %d ta baliq yangi yaratildi!\n", fishCount);
+
+                        generateNewFishes(fishCount);
+
+                        fish1.setCanBreed(false);
+                        fish2.setCanBreed(false);
+                        break;
                     }
                 }
             }
         }
+
         waitForFishThreadsToFinish();
         System.err.println("AKVARIUM TO'XTADI...");
 
@@ -82,10 +90,16 @@ public class Aquarium implements Runnable {
             }
         }
     }
+
     private void generateNewFishes(int fishCount) {
         for (int i = 0; i < fishCount; i++) {
             Fish newFish = new Fish();
             Thread thread = new Thread(newFish);
+            String position = newFish.getX() + "," + newFish.getY() + "," + newFish.getZ();
+            if (occupiedPositions.contains(position)) {
+                continue;
+            }
+            occupiedPositions.add(position);
             thread.start();
             fishThreads.add(thread);
             System.out.printf("Yanig baliq yaratildi jinsi %s\n", (newFish.isMale()) ? "ERKAK" : "AYOL");
