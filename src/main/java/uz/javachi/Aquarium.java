@@ -18,10 +18,10 @@ public class Aquarium implements Runnable {
     @Override
     public void run() {
         System.out.println("AKVARIUM YARATILDI...");
-        FIRST_GENERATING_FISHES_COUNT = random.nextInt(50, 200);
+        FIRST_GENERATING_FISHES_COUNT = random.nextInt(600, 1000);
         generateNewFishes(FIRST_GENERATING_FISHES_COUNT);
-
-        AQUARIUM_MAX_SIZE = random.nextInt(200, 600);
+        addShark(10);
+        AQUARIUM_MAX_SIZE = random.nextInt(600, 2000);
         AQUARIUM_MIN_SIZE = 0;
 
         while (fishList.size() < AQUARIUM_MAX_SIZE && fishList.size() > AQUARIUM_MIN_SIZE) {
@@ -39,10 +39,16 @@ public class Aquarium implements Runnable {
                         return false;
                     }
             );
-
             for (Fish fish1 : fishList) {
                 for (Fish fish2 : fishList) {
-                    if (!fish1.equals(fish2) && fish1.isAdult() && fish2.isAdult() &&
+                    if ((fish2.isShark() || fish1.isShark()) &&
+                            fish2.getX() == fish1.getX() &&
+                            fish2.getY() == fish1.getY() &&
+                            fish2.getZ() == fish1.getZ()) {
+                        fishList.remove(fish1.isShark() ? fish2 : fish1);
+                        TOTAL_SHAR_ATE_FISH++;
+                        break;
+                    }else if (!fish1.equals(fish2) && fish1.isAdult() && fish2.isAdult() &&
                             fish1.isCanBreed() && fish2.isCanBreed() &&
                             fish1.isMale() != fish2.isMale() &&
                             fish1.getX() == fish2.getX() &&
@@ -79,6 +85,19 @@ public class Aquarium implements Runnable {
         System.out.printf("Barcha o'lgan baliqlar soni: %d\n", TOTAL_FISHES_DIE);
         System.out.printf("Barcha uchrashuvlar soni: %d\n", TOTAL_FISHES_MEET);
         System.out.printf("Barcha uchrashuvlardan so'ng yaratilgan baliqlar soni: %d\n", TOTAL_NEW_GENERATING_FISHES_AFTER_MEET);
+        System.out.printf("Akula yegan baliqlar soni: %d\n", TOTAL_SHAR_ATE_FISH);
+    }
+
+    private void addShark(int i) {
+        for (int j = 0; j < i; j++) {
+        if (!fishList.isEmpty()) {
+            Fish shark = fishList.poll();
+            shark.setShark(true);
+            fishList.add(
+                    shark
+            );
+            }
+        }
     }
 
     private void waitForFishThreadsToFinish() {

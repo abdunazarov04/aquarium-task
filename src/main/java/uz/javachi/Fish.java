@@ -4,6 +4,7 @@ import java.util.Random;
 import static uz.javachi.Main.*;
 public class Fish implements Runnable {
     private boolean alive;
+    private boolean isShark;
     private long liveDuration;
     private long birthTime;
     private long lastBreedTime;
@@ -17,14 +18,14 @@ public class Fish implements Runnable {
     public Fish() {
         random = new Random();
         alive = true;
-        liveDuration = random.nextLong(10000, 50000);
+        liveDuration = random.nextLong(5000, 50000);
         birthTime = System.currentTimeMillis();
         male = random.nextBoolean();
         adult = false;
-
-        this.x = random.nextInt(1, 10);
-        this.y = random.nextInt(1, 10);
-        this.z = random.nextInt(1, 10);
+        isShark = false;
+        this.x = random.nextInt(1, 100);
+        this.y = random.nextInt(1, 100);
+        this.z = random.nextInt(1, 100);
     }
 
 
@@ -45,9 +46,9 @@ public class Fish implements Runnable {
                 throw new RuntimeException(e);
             }
 
-            this.x = (this.x + random.nextInt(1, 10)) % 10;
-            this.y = (this.y + random.nextInt(1, 10)) % 10;
-            this.z = (this.z + random.nextInt(1, 10)) % 10;
+            this.x = (this.x + random.nextInt(1, 100)) % 100;
+            this.y = (this.y + random.nextInt(1, 100)) % 100;
+            this.z = (this.z + random.nextInt(1, 100)) % 100;
         }
         System.out.printf("%d baliq o'ldi %n", this.hashCode());
         TOTAL_FISHES_DIE += 1;
@@ -129,6 +130,22 @@ public class Fish implements Runnable {
 
     public void setZ(int z) {
         this.z = z;
+    }
+
+    public void setAlive(boolean alive) {
+        this.alive = alive;
+    }
+
+    public boolean isShark() {
+        return isShark;
+    }
+
+    public void setShark(boolean shark) {
+        isShark = shark;
+    }
+
+    public Random getRandom() {
+        return random;
     }
 
     @Override
